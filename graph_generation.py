@@ -100,10 +100,12 @@ def loadCoraFromFile(args, output_refs, locators):
 @register(output_type=Type.GRAPH)
 @ray.remote
 def load_graph_from_csv(args, output_refs, locators):
-    assert {'edgesFilePath'} <= args.keys(), "Missing arguments for load_graph_from_csv"
+    assert {'edgesFilePath', 'directed'} <= args.keys(), "Missing arguments for load_graph_from_csv"
     # 加载边文件构建网络
     edge_content = HDFS().load_edges_from_csv(args['edgesFilePath'])
-    G = nx.Graph()
+    directed = args['directed'] == 'True'
+
+    G = nx.Graph() if directed else nx.DiGraph()
     id_mapping = {}  # 用于将原始ID映射到新ID
 
     for line in edge_content.strip().split('\n'):
@@ -118,7 +120,7 @@ def load_graph_from_csv(args, output_refs, locators):
         G.add_edge(id_mapping[source], id_mapping[target], weight=float(weight))
 
     nodeAttributesFilePath = args.get('nodeAttributesFilePath')
-    if nodeAttributesFilePath != "":
+    if nodeAttributesFilePath != "" and nodeAttributesFilePath != None:
         # 将节点属性关联到图中的节点
         node_attributes = HDFS().load_node_attributes_from_csv(nodeAttributesFilePath)
         for node_id, attributes in node_attributes.items():

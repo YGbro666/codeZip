@@ -105,7 +105,7 @@ def nxgraph2json(graph: Type.GRAPH, name):
     # 将cluster_dict转换为二维数组或列表
     cluster_list = list(cluster_dict.values())
     graph_data['cluster'] = cluster_list
-    return json.dumps(graph_data, ensure_ascii=False)
+    return json.dumps(graph_data, ensure_ascii=False, default=default_dump)
 
 
 def list2json(lists: Type.LIST, name):

@@ -55,6 +55,18 @@ def pagerank_centrality(args, output_refs, locators):
     G = fetch(output_refs, locators[0])
     return (nx.pagerank(G),)
 
+# 网络稀疏性
+# 概率密度
+@register(input_type=Type.GRAPH, output_type=Type.DICT)
+@ray.remote
+def network_sparsity(args, output_refs, locators):
+    G = fetch(output_refs, locators[0])
+    # 计算网络的稠密程度（稀疏性的补数）
+    density = nx.density(G)
+
+    # 返回结果
+    result_dict = {"density": density}
+    return (result_dict,)
 
 """节点与边的统计"""
 
@@ -62,9 +74,8 @@ def pagerank_centrality(args, output_refs, locators):
 @ray.remote
 def degree_histogram(args, output_refs, locators):
     G = fetch(output_refs, locators[0])
-    res = dict()
-    res["degree histogram"] = nx.degree_histogram(G)
-    return (res,)
+    result_dict = {"degree_histogram": nx.degree_histogram(G)}
+    return (result_dict,)
 
 
 '''生成树'''
@@ -372,7 +383,7 @@ def walktrap_communities(args, output_refs, locators):
 
 
 # 计算连通图的网络直径
-@register(input_type=Type.GRAPH, output_type=Type.LIST)
+@register(input_type=Type.GRAPH, output_type=Type.DICT)
 @ray.remote
 def network_diameter(args, output_refs, locators):
     G = fetch(output_refs, locators[0])
@@ -382,8 +393,38 @@ def network_diameter(args, output_refs, locators):
         is_connected = nx.is_connected(G)  # 判断无向图是否连通
     assert is_connected, "The graph is not connected, and it is recommended to use the maximum connectivity component for preprocessing."
     g = ig.Graph.from_networkx(G)
-    return (ig.Graph.diameter(g),)
+    result_dict = {"network_diameter": float(ig.Graph.diameter(g))}
+    return (result_dict,)
 
+#计算网络平均度
+@register(input_type=Type.GRAPH, output_type=Type.DICT)
+@ray.remote
+def avg_degree(args, output_refs, locators):
+    G = fetch(output_refs, locators[0])
+    # 计算网络的平均度
+    average_degree = sum(dict(G.degree()).values()) / len(G)
+    result_dict = {"network_avg_degree": average_degree}
+    return (result_dict,)
+
+#聚集系数计算
+@register(input_type=Type.GRAPH, output_type=Type.DICT)
+@ray.remote
+def clustering(args, output_refs, locators):
+    G = fetch(output_refs, locators[0])
+    res = dict()
+    res["clustering"] =nx.transitivity(G)
+    return (res,)
+
+"""节点与边的统计"""
+
+@register(input_type=Type.GRAPH, output_type=Type.DICT)
+@ray.remote
+def network_node_edge(args, output_refs, locators):
+    G = fetch(output_refs, locators[0])
+    res = dict()
+    res["nodeNumber"] = nx.number_of_nodes(G)
+    res["edgeNumber"] = nx.number_of_edges(G)
+    return (res,)
 
 # 得到图的最大连通子图
 @register(input_type=Type.GRAPH, output_type=Type.GRAPH)
